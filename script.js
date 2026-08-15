@@ -23,10 +23,35 @@ const SUPABASE_URL = "https://wxaehswbzymtaeggxubm.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ED5lSv3N8zdKUzRF-Arn0w_R3ALO5_J";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+let currentUser = null;
+
+// --- View switching ---
+// The header stays fixed; only the <main> content swaps between these views.
+
+const views = {
+  home: document.getElementById("viewHome"),
+  auth: document.getElementById("viewAuth"),
+  recovery: document.getElementById("viewRecovery"),
+  recoveryComplete: document.getElementById("viewRecoveryComplete"),
+  messages: document.getElementById("viewMessages"),
+};
+
+function showView(name) {
+  Object.values(views).forEach((el) => {
+    el.hidden = true;
+  });
+  views[name].hidden = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+document.querySelectorAll(".home-link").forEach((link) => {
+  link.addEventListener("click", () => showView("home"));
+});
+
+// --- Contact form ---
+
 const contactForm = document.getElementById("contactForm");
 const formStatus = document.getElementById("formStatus");
-
-let currentUser = null;
 
 contactForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -54,76 +79,49 @@ contactForm.addEventListener("submit", async (event) => {
   formStatus.textContent = "메시지가 전송되었습니다. 감사합니다!";
   formStatus.classList.add("form-status--success");
   contactForm.reset();
-
-  if (currentUser) {
-    loadMyMessages();
-  }
 });
+
+// --- Nav auth controls ---
+
+const navLoggedOut = document.getElementById("navLoggedOut");
+const navLoggedIn = document.getElementById("navLoggedIn");
+const navUserEmail = document.getElementById("navUserEmail");
+const navLoginBtn = document.getElementById("navLoginBtn");
+const navSignupBtn = document.getElementById("navSignupBtn");
+const navMessagesBtn = document.getElementById("navMessagesBtn");
+const navLogoutBtn = document.getElementById("navLogoutBtn");
+
+navLoginBtn.addEventListener("click", () => showView("auth"));
+navSignupBtn.addEventListener("click", () => showView("auth"));
+navMessagesBtn.addEventListener("click", () => {
+  showView("messages");
+  loadMyMessages();
+});
+
+navLogoutBtn.addEventListener("click", async () => {
+  await supabaseClient.auth.signOut();
+  showView("home");
+});
+
+function updateAuthUI(user) {
+  currentUser = user;
+
+  if (user) {
+    navLoggedOut.hidden = true;
+    navLoggedIn.hidden = false;
+    navUserEmail.textContent = user.email;
+  } else {
+    navLoggedOut.hidden = false;
+    navLoggedIn.hidden = true;
+  }
+}
 
 // --- Login / signup ---
 
 const authForm = document.getElementById("authForm");
 const authStatus = document.getElementById("authStatus");
 const signupBtn = document.getElementById("signupBtn");
-const logoutBtn = document.getElementById("logoutBtn");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
-const authLoggedOut = document.getElementById("authLoggedOut");
-const authLoggedIn = document.getElementById("authLoggedIn");
-const siteContent = document.getElementById("siteContent");
-const recoveryScreen = document.getElementById("recoveryScreen");
-const recoveryForm = document.getElementById("recoveryForm");
-const recoveryStatus = document.getElementById("recoveryStatus");
-const recoveryComplete = document.getElementById("recoveryComplete");
-const goToLoginBtn = document.getElementById("goToLoginBtn");
-const userEmailDisplay = document.getElementById("userEmailDisplay");
-const myMessagesList = document.getElementById("myMessages");
-
-let showingRecoveryComplete = false;
-
-function updateAuthUI(user) {
-  currentUser = user;
-
-  if (showingRecoveryComplete) {
-    return;
-  }
-
-  siteContent.hidden = false;
-  recoveryScreen.hidden = true;
-
-  if (user) {
-    authLoggedOut.hidden = true;
-    authLoggedIn.hidden = false;
-    userEmailDisplay.textContent = user.email;
-    loadMyMessages();
-  } else {
-    authLoggedOut.hidden = false;
-    authLoggedIn.hidden = true;
-    myMessagesList.innerHTML = "";
-  }
-}
-
-async function loadMyMessages() {
-  if (!currentUser) return;
-
-  const { data, error } = await supabaseClient
-    .from("contact_messages")
-    .select("message, created_at")
-    .eq("user_id", currentUser.id)
-    .order("created_at", { ascending: false });
-
-  if (error || !data || data.length === 0) {
-    myMessagesList.innerHTML = '<li class="my-message__empty">아직 보낸 메시지가 없습니다.</li>';
-    return;
-  }
-
-  myMessagesList.innerHTML = data
-    .map((row) => {
-      const date = new Date(row.created_at).toLocaleString("ko-KR");
-      const message = row.message.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-      return `<li><div class="my-message__meta">${date}</div>${message}</li>`;
-    })
-    .join("");
-}
 
 authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -142,6 +140,7 @@ authForm.addEventListener("submit", async (event) => {
   }
 
   authForm.reset();
+  showView("home");
 });
 
 signupBtn.addEventListener("click", async () => {
@@ -170,10 +169,6 @@ signupBtn.addEventListener("click", async () => {
   authForm.reset();
 });
 
-logoutBtn.addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
-});
-
 forgotPasswordBtn.addEventListener("click", async () => {
   authStatus.textContent = "";
   authStatus.className = "form-status";
@@ -200,6 +195,12 @@ forgotPasswordBtn.addEventListener("click", async () => {
   authStatus.classList.add("form-status--success");
 });
 
+// --- Password recovery ---
+
+const recoveryForm = document.getElementById("recoveryForm");
+const recoveryStatus = document.getElementById("recoveryStatus");
+const goToLoginBtn = document.getElementById("goToLoginBtn");
+
 recoveryForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   recoveryStatus.textContent = "";
@@ -215,25 +216,46 @@ recoveryForm.addEventListener("submit", async (event) => {
   }
 
   recoveryForm.reset();
-  showingRecoveryComplete = true;
   await supabaseClient.auth.signOut();
-
-  recoveryForm.hidden = true;
-  recoveryComplete.hidden = false;
+  showView("recoveryComplete");
 });
 
 goToLoginBtn.addEventListener("click", () => {
-  showingRecoveryComplete = false;
-  recoveryComplete.hidden = true;
-  recoveryForm.hidden = false;
-  updateAuthUI(null);
-  document.getElementById("account").scrollIntoView({ behavior: "smooth" });
+  showView("auth");
 });
+
+// --- My messages ---
+
+const myMessagesList = document.getElementById("myMessages");
+
+async function loadMyMessages() {
+  if (!currentUser) return;
+
+  const { data, error } = await supabaseClient
+    .from("contact_messages")
+    .select("message, created_at")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error || !data || data.length === 0) {
+    myMessagesList.innerHTML = '<li class="my-message__empty">아직 보낸 메시지가 없습니다.</li>';
+    return;
+  }
+
+  myMessagesList.innerHTML = data
+    .map((row) => {
+      const date = new Date(row.created_at).toLocaleString("ko-KR");
+      const message = row.message.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+      return `<li><div class="my-message__meta">${date}</div>${message}</li>`;
+    })
+    .join("");
+}
+
+// --- Auth session wiring ---
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === "PASSWORD_RECOVERY") {
-    siteContent.hidden = true;
-    recoveryScreen.hidden = false;
+    showView("recovery");
     return;
   }
   updateAuthUI(session ? session.user : null);

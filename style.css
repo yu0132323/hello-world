@@ -46,6 +46,12 @@ body {
   font-size: 1.1rem;
 }
 
+.nav__right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
 .nav__links {
   list-style: none;
   display: flex;
@@ -61,6 +67,32 @@ body {
 }
 
 .nav__links a:hover {
+  color: var(--accent);
+}
+
+.nav__auth {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--border);
+  padding-left: 1.5rem;
+}
+
+.nav__auth-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav__auth-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.nav__auth-btn:hover {
   color: var(--accent);
 }
 
@@ -195,29 +227,7 @@ body {
   align-self: flex-start;
 }
 
-.recovery-screen {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
-  padding: 1.5rem;
-  z-index: 100;
-}
-
-.recovery-card {
-  width: 100%;
-  max-width: 380px;
-  text-align: center;
-}
-
-.recovery-card .contact-form {
-  margin-top: 1.5rem;
-  text-align: left;
-}
-
-#recoveryComplete .btn {
+#viewRecoveryComplete .btn {
   margin-top: 1rem;
   border: none;
   cursor: pointer;
@@ -239,24 +249,15 @@ body {
   cursor: pointer;
 }
 
-#authLoggedIn {
-  max-width: 420px;
-  margin: 2rem auto 0;
-  text-align: left;
-}
-
-#authLoggedIn h3 {
-  margin-top: 2rem;
-  font-size: 1.1rem;
-}
-
 .my-messages {
   list-style: none;
-  margin: 1rem 0 0;
+  margin: 1rem auto 0;
   padding: 0;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  text-align: left;
 }
 
 .my-messages li {
@@ -287,12 +288,22 @@ body {
   font-size: 0.9rem;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .nav {
+    flex-wrap: wrap;
+    gap: 0.75rem;
     padding: 1rem;
+  }
+  .nav__right {
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
   .nav__links {
     gap: 1rem;
+  }
+  .nav__auth {
+    border-left: none;
+    padding-left: 0;
   }
   .hero h1 {
     font-size: 2rem;

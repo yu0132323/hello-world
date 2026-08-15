@@ -7,99 +7,92 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="siteContent">
   <header class="nav">
     <div class="nav__brand">Hello World</div>
-    <nav>
-      <ul class="nav__links">
-        <li><a href="#about">소개</a></li>
-        <li><a href="#features">특징</a></li>
-        <li><a href="#account">계정</a></li>
-        <li><a href="#contact">연락처</a></li>
-      </ul>
-    </nav>
-    <button id="themeToggle" class="theme-toggle" aria-label="다크 모드 전환">🌙</button>
+    <div class="nav__right">
+      <nav>
+        <ul class="nav__links">
+          <li><a href="#about" class="home-link">소개</a></li>
+          <li><a href="#features" class="home-link">특징</a></li>
+          <li><a href="#contact" class="home-link">연락처</a></li>
+        </ul>
+      </nav>
+      <div class="nav__auth">
+        <div id="navLoggedOut" class="nav__auth-group">
+          <button type="button" id="navLoginBtn" class="nav__auth-btn">로그인</button>
+          <button type="button" id="navSignupBtn" class="nav__auth-btn">회원가입</button>
+        </div>
+        <div id="navLoggedIn" class="nav__auth-group" hidden>
+          <button type="button" id="navMessagesBtn" class="nav__auth-btn"><span id="navUserEmail"></span></button>
+          <button type="button" id="navLogoutBtn" class="nav__auth-btn">로그아웃</button>
+        </div>
+      </div>
+      <button id="themeToggle" class="theme-toggle" aria-label="다크 모드 전환">🌙</button>
+    </div>
   </header>
 
   <main>
-    <section class="hero">
-      <h1>안녕하세요, 반갑습니다 👋</h1>
-      <p>순수 HTML/CSS/JavaScript로 만든 심플한 한 페이지 웹사이트입니다.</p>
-      <a href="#contact" class="btn">연락하기</a>
-    </section>
+    <div id="viewHome">
+      <section class="hero">
+        <h1>안녕하세요, 반갑습니다 👋</h1>
+        <p>순수 HTML/CSS/JavaScript로 만든 심플한 한 페이지 웹사이트입니다.</p>
+        <a href="#contact" class="btn">연락하기</a>
+      </section>
 
-    <section id="about" class="section">
-      <h2>소개</h2>
-      <p>
-        이 페이지는 별도의 프레임워크나 빌드 과정 없이, 브라우저에서 바로 실행되는
-        가장 단순한 형태의 웹사이트 예시입니다.
-      </p>
-    </section>
+      <section id="about" class="section">
+        <h2>소개</h2>
+        <p>
+          이 페이지는 별도의 프레임워크나 빌드 과정 없이, 브라우저에서 바로 실행되는
+          가장 단순한 형태의 웹사이트 예시입니다.
+        </p>
+      </section>
 
-    <section id="features" class="section">
-      <h2>특징</h2>
-      <div class="cards">
-        <div class="card">
-          <h3>가볍습니다</h3>
-          <p>외부 라이브러리 없이 HTML, CSS, JS 파일 3개로만 구성됩니다.</p>
-        </div>
-        <div class="card">
-          <h3>반응형</h3>
-          <p>모바일과 데스크톱 화면 크기에 맞춰 레이아웃이 자동 조정됩니다.</p>
-        </div>
-        <div class="card">
-          <h3>다크 모드</h3>
-          <p>우측 상단 버튼으로 라이트/다크 테마를 전환할 수 있습니다.</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="account" class="section">
-      <h2>계정</h2>
-
-      <div id="authLoggedOut">
-        <p>로그인하면 내가 보낸 메시지 기록을 확인할 수 있어요.</p>
-        <form id="authForm" class="contact-form">
-          <input type="email" id="authEmail" name="authEmail" placeholder="이메일" required />
-          <input type="password" id="authPassword" name="authPassword" placeholder="비밀번호 (6자 이상)" required minlength="6" />
-          <div class="auth-actions">
-            <button type="submit" class="btn">로그인</button>
-            <button type="button" id="signupBtn" class="btn btn--outline">회원가입</button>
+      <section id="features" class="section">
+        <h2>특징</h2>
+        <div class="cards">
+          <div class="card">
+            <h3>가볍습니다</h3>
+            <p>외부 라이브러리 없이 HTML, CSS, JS 파일 3개로만 구성됩니다.</p>
           </div>
-          <button type="button" id="forgotPasswordBtn" class="link-btn">비밀번호를 잊으셨나요?</button>
-          <p id="authStatus" class="form-status" role="status" aria-live="polite"></p>
+          <div class="card">
+            <h3>반응형</h3>
+            <p>모바일과 데스크톱 화면 크기에 맞춰 레이아웃이 자동 조정됩니다.</p>
+          </div>
+          <div class="card">
+            <h3>다크 모드</h3>
+            <p>우측 상단 버튼으로 라이트/다크 테마를 전환할 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" class="section">
+        <h2>연락처</h2>
+        <p>아래 폼을 작성해 주시면 확인 후 답장드리겠습니다. 로그인 상태라면 계정에 메시지가 연결되어 기록으로 남습니다.</p>
+        <form id="contactForm" class="contact-form">
+          <input type="text" id="name" name="name" placeholder="이름" required />
+          <input type="email" id="email" name="email" placeholder="이메일" required />
+          <textarea id="message" name="message" placeholder="메시지" rows="4" required></textarea>
+          <button type="submit" class="btn">보내기</button>
+          <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
         </form>
-      </div>
+      </section>
+    </div>
 
-      <div id="authLoggedIn" hidden>
-        <p><strong id="userEmailDisplay"></strong>님, 환영합니다!</p>
-        <button type="button" id="logoutBtn" class="btn btn--outline">로그아웃</button>
-
-        <h3>내가 보낸 메시지</h3>
-        <ul id="myMessages" class="my-messages"></ul>
-      </div>
-    </section>
-
-    <section id="contact" class="section">
-      <h2>연락처</h2>
-      <p>아래 폼을 작성해 주시면 확인 후 답장드리겠습니다. 로그인 상태라면 계정에 메시지가 연결되어 기록으로 남습니다.</p>
-      <form id="contactForm" class="contact-form">
-        <input type="text" id="name" name="name" placeholder="이름" required />
-        <input type="email" id="email" name="email" placeholder="이메일" required />
-        <textarea id="message" name="message" placeholder="메시지" rows="4" required></textarea>
-        <button type="submit" class="btn">보내기</button>
-        <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
+    <div id="viewAuth" class="section" hidden>
+      <h2>로그인</h2>
+      <form id="authForm" class="contact-form">
+        <input type="email" id="authEmail" name="authEmail" placeholder="이메일" required />
+        <input type="password" id="authPassword" name="authPassword" placeholder="비밀번호 (6자 이상)" required minlength="6" />
+        <div class="auth-actions">
+          <button type="submit" class="btn">로그인</button>
+          <button type="button" id="signupBtn" class="btn btn--outline">회원가입</button>
+        </div>
+        <button type="button" id="forgotPasswordBtn" class="link-btn">비밀번호를 잊으셨나요?</button>
+        <p id="authStatus" class="form-status" role="status" aria-live="polite"></p>
       </form>
-    </section>
-  </main>
+    </div>
 
-  <footer class="footer">
-    <p>&copy; <span id="year"></span> Hello World. All rights reserved.</p>
-  </footer>
-  </div>
-
-  <div id="recoveryScreen" class="recovery-screen" hidden>
-    <div class="recovery-card">
+    <div id="viewRecovery" class="section" hidden>
       <h2>새 비밀번호 설정</h2>
       <p>새 비밀번호를 입력해 주세요.</p>
       <form id="recoveryForm" class="contact-form">
@@ -107,12 +100,23 @@
         <button type="submit" class="btn">비밀번호 변경</button>
         <p id="recoveryStatus" class="form-status" role="status" aria-live="polite"></p>
       </form>
-      <div id="recoveryComplete" hidden>
-        <p>비밀번호 변경이 완료되었습니다.</p>
-        <button type="button" id="goToLoginBtn" class="btn">다시 로그인하기</button>
-      </div>
     </div>
-  </div>
+
+    <div id="viewRecoveryComplete" class="section" hidden>
+      <h2>완료</h2>
+      <p>비밀번호 변경이 완료되었습니다.</p>
+      <button type="button" id="goToLoginBtn" class="btn">다시 로그인하기</button>
+    </div>
+
+    <div id="viewMessages" class="section" hidden>
+      <h2>내가 보낸 메시지</h2>
+      <ul id="myMessages" class="my-messages"></ul>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; <span id="year"></span> Hello World. All rights reserved.</p>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="script.js"></script>
