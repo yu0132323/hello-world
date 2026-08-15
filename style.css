@@ -83,6 +83,10 @@ body {
   gap: 1rem;
 }
 
+.nav__auth-group[hidden] {
+  display: none;
+}
+
 .nav__auth-btn {
   background: none;
   border: none;
