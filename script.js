@@ -85,7 +85,7 @@ contactForm.addEventListener("submit", async (event) => {
 
 const navLoggedOut = document.getElementById("navLoggedOut");
 const navLoggedIn = document.getElementById("navLoggedIn");
-const navUserEmail = document.getElementById("navUserEmail");
+const messagesUserEmail = document.getElementById("messagesUserEmail");
 const navLoginBtn = document.getElementById("navLoginBtn");
 const navSignupBtn = document.getElementById("navSignupBtn");
 const navMessagesBtn = document.getElementById("navMessagesBtn");
@@ -109,7 +109,7 @@ function updateAuthUI(user) {
   if (user) {
     navLoggedOut.hidden = true;
     navLoggedIn.hidden = false;
-    navUserEmail.textContent = user.email;
+    messagesUserEmail.textContent = user.email;
   } else {
     navLoggedOut.hidden = false;
     navLoggedIn.hidden = true;

@@ -23,7 +23,7 @@
           <button type="button" id="navSignupBtn" class="nav__auth-btn">회원가입</button>
         </div>
         <div id="navLoggedIn" class="nav__auth-group" hidden>
-          <button type="button" id="navMessagesBtn" class="nav__auth-btn"><span id="navUserEmail"></span></button>
+          <button type="button" id="navMessagesBtn" class="nav__auth-btn">계정</button>
           <button type="button" id="navLogoutBtn" class="nav__auth-btn">로그아웃</button>
         </div>
       </div>
@@ -109,7 +109,9 @@
     </div>
 
     <div id="viewMessages" class="section" hidden>
-      <h2>내가 보낸 메시지</h2>
+      <h2>계정</h2>
+      <p><strong id="messagesUserEmail"></strong>님으로 로그인되어 있습니다.</p>
+      <h3>내가 보낸 메시지</h3>
       <ul id="myMessages" class="my-messages"></ul>
     </div>
   </main>
