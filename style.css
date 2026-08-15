@@ -195,9 +195,25 @@ body {
   align-self: flex-start;
 }
 
-#authRecovery {
-  max-width: 420px;
-  margin: 2rem auto 0;
+.recovery-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 1.5rem;
+  z-index: 100;
+}
+
+.recovery-card {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+}
+
+.recovery-card .contact-form {
+  margin-top: 1.5rem;
   text-align: left;
 }
 

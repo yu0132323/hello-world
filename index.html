@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="siteContent">
   <header class="nav">
     <div class="nav__brand">Hello World</div>
     <nav>
@@ -70,15 +71,6 @@
         </form>
       </div>
 
-      <div id="authRecovery" hidden>
-        <p>새 비밀번호를 설정해 주세요.</p>
-        <form id="recoveryForm" class="contact-form">
-          <input type="password" id="newPassword" name="newPassword" placeholder="새 비밀번호 (6자 이상)" required minlength="6" />
-          <button type="submit" class="btn">비밀번호 변경</button>
-          <p id="recoveryStatus" class="form-status" role="status" aria-live="polite"></p>
-        </form>
-      </div>
-
       <div id="authLoggedIn" hidden>
         <p><strong id="userEmailDisplay"></strong>님, 환영합니다!</p>
         <button type="button" id="logoutBtn" class="btn btn--outline">로그아웃</button>
@@ -104,6 +96,19 @@
   <footer class="footer">
     <p>&copy; <span id="year"></span> Hello World. All rights reserved.</p>
   </footer>
+  </div>
+
+  <div id="recoveryScreen" class="recovery-screen" hidden>
+    <div class="recovery-card">
+      <h2>새 비밀번호 설정</h2>
+      <p>새 비밀번호를 입력해 주세요.</p>
+      <form id="recoveryForm" class="contact-form">
+        <input type="password" id="newPassword" name="newPassword" placeholder="새 비밀번호 (6자 이상)" required minlength="6" />
+        <button type="submit" class="btn">비밀번호 변경</button>
+        <p id="recoveryStatus" class="form-status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="script.js"></script>

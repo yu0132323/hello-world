@@ -69,7 +69,8 @@ const logoutBtn = document.getElementById("logoutBtn");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 const authLoggedOut = document.getElementById("authLoggedOut");
 const authLoggedIn = document.getElementById("authLoggedIn");
-const authRecovery = document.getElementById("authRecovery");
+const siteContent = document.getElementById("siteContent");
+const recoveryScreen = document.getElementById("recoveryScreen");
 const recoveryForm = document.getElementById("recoveryForm");
 const recoveryStatus = document.getElementById("recoveryStatus");
 const userEmailDisplay = document.getElementById("userEmailDisplay");
@@ -77,7 +78,8 @@ const myMessagesList = document.getElementById("myMessages");
 
 function updateAuthUI(user) {
   currentUser = user;
-  authRecovery.hidden = true;
+  siteContent.hidden = false;
+  recoveryScreen.hidden = true;
 
   if (user) {
     authLoggedOut.hidden = true;
@@ -210,9 +212,8 @@ recoveryForm.addEventListener("submit", async (event) => {
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === "PASSWORD_RECOVERY") {
-    authLoggedOut.hidden = true;
-    authLoggedIn.hidden = true;
-    authRecovery.hidden = false;
+    siteContent.hidden = true;
+    recoveryScreen.hidden = false;
     return;
   }
   updateAuthUI(session ? session.user : null);
