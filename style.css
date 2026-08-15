@@ -184,6 +184,62 @@ body {
   color: #d63a3a;
 }
 
+.auth-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.auth-actions .btn {
+  flex: 1;
+  border: none;
+  cursor: pointer;
+}
+
+.auth-actions .btn--outline {
+  border: 1px solid var(--accent);
+  cursor: pointer;
+}
+
+#authLoggedIn {
+  max-width: 420px;
+  margin: 2rem auto 0;
+  text-align: left;
+}
+
+#authLoggedIn h3 {
+  margin-top: 2rem;
+  font-size: 1.1rem;
+}
+
+.my-messages {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.my-messages li {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+
+.my-messages .my-message__meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.my-messages .my-message__empty {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 0;
+}
+
 .footer {
   text-align: center;
   padding: 2rem 1rem;
