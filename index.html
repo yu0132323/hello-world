@@ -54,8 +54,14 @@
 
     <section id="contact" class="section">
       <h2>연락처</h2>
-      <p>궁금한 점이 있다면 아래 이메일로 연락 주세요.</p>
-      <a href="mailto:hello@example.com" class="btn btn--outline">hello@example.com</a>
+      <p>아래 폼을 작성해 주시면 확인 후 답장드리겠습니다.</p>
+      <form id="contactForm" class="contact-form">
+        <input type="text" id="name" name="name" placeholder="이름" required />
+        <input type="email" id="email" name="email" placeholder="이메일" required />
+        <textarea id="message" name="message" placeholder="메시지" rows="4" required></textarea>
+        <button type="submit" class="btn">보내기</button>
+        <p id="formStatus" class="form-status" role="status" aria-live="polite"></p>
+      </form>
     </section>
   </main>
 
@@ -63,6 +69,7 @@
     <p>&copy; <span id="year"></span> Hello World. All rights reserved.</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

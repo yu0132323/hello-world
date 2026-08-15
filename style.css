@@ -137,6 +137,53 @@ body {
   margin-top: 0;
 }
 
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 420px;
+  margin: 2rem auto 0;
+  text-align: left;
+}
+
+.contact-form input,
+.contact-form textarea {
+  font: inherit;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.contact-form textarea {
+  resize: vertical;
+}
+
+.contact-form .btn {
+  border: none;
+  cursor: pointer;
+}
+
+.contact-form .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-status {
+  margin: 0;
+  font-size: 0.9rem;
+  min-height: 1.2em;
+}
+
+.form-status--success {
+  color: #1a9c5c;
+}
+
+.form-status--error {
+  color: #d63a3a;
+}
+
 .footer {
   text-align: center;
   padding: 2rem 1rem;
