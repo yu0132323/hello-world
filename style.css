@@ -217,6 +217,12 @@ body {
   text-align: left;
 }
 
+#recoveryComplete .btn {
+  margin-top: 1rem;
+  border: none;
+  cursor: pointer;
+}
+
 .auth-actions {
   display: flex;
   gap: 0.75rem;

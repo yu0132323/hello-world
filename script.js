@@ -73,11 +73,20 @@ const siteContent = document.getElementById("siteContent");
 const recoveryScreen = document.getElementById("recoveryScreen");
 const recoveryForm = document.getElementById("recoveryForm");
 const recoveryStatus = document.getElementById("recoveryStatus");
+const recoveryComplete = document.getElementById("recoveryComplete");
+const goToLoginBtn = document.getElementById("goToLoginBtn");
 const userEmailDisplay = document.getElementById("userEmailDisplay");
 const myMessagesList = document.getElementById("myMessages");
 
+let showingRecoveryComplete = false;
+
 function updateAuthUI(user) {
   currentUser = user;
+
+  if (showingRecoveryComplete) {
+    return;
+  }
+
   siteContent.hidden = false;
   recoveryScreen.hidden = true;
 
@@ -206,8 +215,19 @@ recoveryForm.addEventListener("submit", async (event) => {
   }
 
   recoveryForm.reset();
-  const { data } = await supabaseClient.auth.getUser();
-  updateAuthUI(data.user);
+  showingRecoveryComplete = true;
+  await supabaseClient.auth.signOut();
+
+  recoveryForm.hidden = true;
+  recoveryComplete.hidden = false;
+});
+
+goToLoginBtn.addEventListener("click", () => {
+  showingRecoveryComplete = false;
+  recoveryComplete.hidden = true;
+  recoveryForm.hidden = false;
+  updateAuthUI(null);
+  document.getElementById("account").scrollIntoView({ behavior: "smooth" });
 });
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
