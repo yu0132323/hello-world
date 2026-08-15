@@ -184,6 +184,23 @@ body {
   color: #d63a3a;
 }
 
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  align-self: flex-start;
+}
+
+#authRecovery {
+  max-width: 420px;
+  margin: 2rem auto 0;
+  text-align: left;
+}
+
 .auth-actions {
   display: flex;
   gap: 0.75rem;

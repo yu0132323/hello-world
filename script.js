@@ -66,13 +66,18 @@ const authForm = document.getElementById("authForm");
 const authStatus = document.getElementById("authStatus");
 const signupBtn = document.getElementById("signupBtn");
 const logoutBtn = document.getElementById("logoutBtn");
+const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 const authLoggedOut = document.getElementById("authLoggedOut");
 const authLoggedIn = document.getElementById("authLoggedIn");
+const authRecovery = document.getElementById("authRecovery");
+const recoveryForm = document.getElementById("recoveryForm");
+const recoveryStatus = document.getElementById("recoveryStatus");
 const userEmailDisplay = document.getElementById("userEmailDisplay");
 const myMessagesList = document.getElementById("myMessages");
 
 function updateAuthUI(user) {
   currentUser = user;
+  authRecovery.hidden = true;
 
   if (user) {
     authLoggedOut.hidden = true;
@@ -158,7 +163,58 @@ logoutBtn.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
 });
 
-supabaseClient.auth.onAuthStateChange((_event, session) => {
+forgotPasswordBtn.addEventListener("click", async () => {
+  authStatus.textContent = "";
+  authStatus.className = "form-status";
+
+  const email = document.getElementById("authEmail").value.trim();
+
+  if (!email) {
+    authStatus.textContent = "재설정 링크를 받을 이메일을 먼저 입력해 주세요.";
+    authStatus.classList.add("form-status--error");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href.split("#")[0].split("?")[0],
+  });
+
+  if (error) {
+    authStatus.textContent = "재설정 이메일 발송에 실패했습니다: " + error.message;
+    authStatus.classList.add("form-status--error");
+    return;
+  }
+
+  authStatus.textContent = "비밀번호 재설정 링크를 이메일로 보냈습니다.";
+  authStatus.classList.add("form-status--success");
+});
+
+recoveryForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  recoveryStatus.textContent = "";
+  recoveryStatus.className = "form-status";
+
+  const newPassword = document.getElementById("newPassword").value;
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+  if (error) {
+    recoveryStatus.textContent = "변경에 실패했습니다: " + error.message;
+    recoveryStatus.classList.add("form-status--error");
+    return;
+  }
+
+  recoveryForm.reset();
+  const { data } = await supabaseClient.auth.getUser();
+  updateAuthUI(data.user);
+});
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    authLoggedOut.hidden = true;
+    authLoggedIn.hidden = true;
+    authRecovery.hidden = false;
+    return;
+  }
   updateAuthUI(session ? session.user : null);
 });
 

@@ -65,7 +65,17 @@
             <button type="submit" class="btn">로그인</button>
             <button type="button" id="signupBtn" class="btn btn--outline">회원가입</button>
           </div>
+          <button type="button" id="forgotPasswordBtn" class="link-btn">비밀번호를 잊으셨나요?</button>
           <p id="authStatus" class="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div id="authRecovery" hidden>
+        <p>새 비밀번호를 설정해 주세요.</p>
+        <form id="recoveryForm" class="contact-form">
+          <input type="password" id="newPassword" name="newPassword" placeholder="새 비밀번호 (6자 이상)" required minlength="6" />
+          <button type="submit" class="btn">비밀번호 변경</button>
+          <p id="recoveryStatus" class="form-status" role="status" aria-live="polite"></p>
         </form>
       </div>
 
