@@ -37,6 +37,12 @@ python3 oklab_ppt/cli.py gradient "#2E86AB" --steps 5 --l-min 0.10 --l-max 0.55 
     --template existing.pptx --shape "직사각형 2" --angle 45 --out existing_gradient.pptx
 #   --shape는 도형의 정확한 이름(PowerPoint의 선택 창에서 확인 가능), --slide로 특정
 #   슬라이드만 지정할 수도 있습니다(기본값: 이름이 일치하는 모든 슬라이드).
+
+# 5) 색조 유지 대신 두 색 사이를 보간(예: 빨강 -> 노랑)
+python3 oklab_ppt/cli.py gradient "#7A0C1E" --color2 "#A67C00" --steps 5 \
+    --template existing.pptx --shape "직사각형 2" --angle 45 --out existing_red_yellow.pptx
+#   --color2를 지정하면 --l-min/--l-max는 무시되고, OKLab 공간에서 두 색을 직선으로
+#   보간합니다. palette/theme/swatches에도 동일하게 --color2를 쓸 수 있습니다.
 ```
 
 `--l-min`, `--l-max`(OKLab L, 0=검정 ~ 1=흰색)로 가장 어두운/밝은 톤의

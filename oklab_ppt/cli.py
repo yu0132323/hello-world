@@ -9,6 +9,10 @@ Subcommands:
             rectangles, so you can see the tones without touching theme colors.
   gradient  Fill an existing shape (matched by name) with a linear gradient
             built from the tone palette.
+
+If --color2 is given, the palette interpolates straight from --color to
+--color2 through OKLab (a "color A to color B" gradient, hue included).
+Otherwise it builds a same-hue tints/shades ramp from --color alone.
 """
 
 from __future__ import annotations
@@ -16,9 +20,15 @@ from __future__ import annotations
 import argparse
 import sys
 
-from color_oklab import generate_tone_palette
+from color_oklab import generate_tone_palette, interpolate_tone_palette
 
 _ROLE_ORDER = ["dk1", "lt1", "dk2", "lt2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6"]
+
+
+def _build_palette(args: argparse.Namespace) -> list[dict]:
+    if args.color2:
+        return interpolate_tone_palette(args.color, args.color2, steps=args.steps)
+    return generate_tone_palette(args.color, steps=args.steps, l_min=args.l_min, l_max=args.l_max)
 
 
 def _print_palette(palette: list[dict]) -> None:
@@ -29,8 +39,7 @@ def _print_palette(palette: list[dict]) -> None:
 
 
 def cmd_palette(args: argparse.Namespace) -> None:
-    palette = generate_tone_palette(args.color, steps=args.steps, l_min=args.l_min, l_max=args.l_max)
-    _print_palette(palette)
+    _print_palette(_build_palette(args))
 
 
 def cmd_theme(args: argparse.Namespace) -> None:
@@ -39,7 +48,7 @@ def cmd_theme(args: argparse.Namespace) -> None:
     from pptx.opc.constants import RELATIONSHIP_TYPE as RT
     from pptx.oxml.ns import qn
 
-    palette = generate_tone_palette(args.color, steps=args.steps, l_min=args.l_min, l_max=args.l_max)
+    palette = _build_palette(args)
     hexes = [c["hex"] for c in palette]
 
     prs = Presentation(args.template) if args.template else Presentation()
@@ -134,7 +143,7 @@ def etree_localname(element) -> str:
 def cmd_gradient(args: argparse.Namespace) -> None:
     from pptx import Presentation
 
-    palette = generate_tone_palette(args.color, steps=args.steps, l_min=args.l_min, l_max=args.l_max)
+    palette = _build_palette(args)
     hexes = [c["hex"] for c in palette]
 
     prs = Presentation(args.template)
@@ -154,7 +163,10 @@ def cmd_gradient(args: argparse.Namespace) -> None:
         print(f"slide {slide_index}: applied gradient to {shape.name!r}")
 
     prs.save(args.out)
-    print(f"wrote gradient from #{args.color.lstrip('#').upper()} ({args.steps} steps, {args.angle} deg) -> {args.out}")
+    src = f"#{args.color.lstrip('#').upper()}"
+    if args.color2:
+        src += f" -> #{args.color2.lstrip('#').upper()}"
+    print(f"wrote gradient from {src} ({args.steps} steps, {args.angle} deg) -> {args.out}")
     _print_palette(palette)
 
 
@@ -164,15 +176,18 @@ def cmd_swatches(args: argparse.Namespace) -> None:
     from pptx.dml.color import RGBColor
     from pptx.enum.text import PP_ALIGN
 
-    palette = generate_tone_palette(args.color, steps=args.steps, l_min=args.l_min, l_max=args.l_max)
+    palette = _build_palette(args)
 
     prs = Presentation(args.template) if args.template else Presentation()
     blank_layout = prs.slide_layouts[6] if len(prs.slide_layouts) > 6 else prs.slide_layouts[-1]
     slide = prs.slides.add_slide(blank_layout)
 
+    title_src = f"#{args.color.lstrip('#').upper()}"
+    if args.color2:
+        title_src += f" -> #{args.color2.lstrip('#').upper()}"
     title_box = slide.shapes.add_textbox(Inches(0.4), Inches(0.3), Inches(9.2), Inches(0.6))
     tf = title_box.text_frame
-    tf.text = f"OKLab tone palette from #{args.color.lstrip('#').upper()}"
+    tf.text = f"OKLab tone palette from {title_src}"
     tf.paragraphs[0].font.size = Pt(24)
     tf.paragraphs[0].font.bold = True
 
@@ -216,9 +231,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     def add_common(p: argparse.ArgumentParser) -> None:
         p.add_argument("color", help="seed color as a hex string, e.g. #2E86AB")
-        p.add_argument("--steps", type=int, default=6, help="number of tone steps, darkest to lightest (default: 6)")
-        p.add_argument("--l-min", type=float, default=0.12, help="minimum OKLab L, 0-1 (default: 0.12)")
-        p.add_argument("--l-max", type=float, default=0.94, help="maximum OKLab L, 0-1 (default: 0.94)")
+        p.add_argument(
+            "--color2",
+            default=None,
+            help="if set, interpolate straight through OKLab from `color` to `color2` "
+            "(e.g. red to yellow) instead of building a same-hue tints/shades ramp; "
+            "--l-min/--l-max are ignored in this mode",
+        )
+        p.add_argument("--steps", type=int, default=6, help="number of tone steps (default: 6)")
+        p.add_argument("--l-min", type=float, default=0.12, help="minimum OKLab L, 0-1, single-color mode only (default: 0.12)")
+        p.add_argument("--l-max", type=float, default=0.94, help="maximum OKLab L, 0-1, single-color mode only (default: 0.94)")
 
     p_palette = sub.add_parser("palette", help="print a tone palette")
     add_common(p_palette)

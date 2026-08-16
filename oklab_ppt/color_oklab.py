@@ -204,3 +204,39 @@ def generate_tone_palette(
             }
         )
     return palette
+
+
+def interpolate_tone_palette(hex1: str, hex2: str, steps: int = 6) -> list[dict]:
+    """Build a palette by interpolating straight through OKLab between two colors.
+
+    Unlike `generate_tone_palette`, hue is not held fixed -- this is what you
+    want for a "color A to color B" gradient (e.g. red to yellow) rather than
+    a tints/shades ramp of one color. Interpolating in OKLab (instead of RGB
+    or CIELAB) avoids the dull, muddy midpoint that a straight RGB blend of
+    two saturated hues tends to produce.
+    """
+    if steps < 2:
+        raise ValueError("steps must be >= 2")
+    lab1 = hex_to_oklab(hex1)
+    lab2 = hex_to_oklab(hex2)
+
+    palette = []
+    for i in range(steps):
+        t = i / (steps - 1)
+        L = lab1.L + t * (lab2.L - lab1.L)
+        a = lab1.a + t * (lab2.a - lab1.a)
+        b = lab1.b + t * (lab2.b - lab1.b)
+        lab = Oklab(L, a, b)
+        if not _in_gamut(lab):
+            lab = gamut_map(L, lab.chroma, lab.hue)
+        palette.append(
+            {
+                "L": round(lab.L, 4),
+                "a": round(lab.a, 4),
+                "b": round(lab.b, 4),
+                "chroma": round(lab.chroma, 4),
+                "hue": round(lab.hue, 2),
+                "hex": oklab_to_hex(lab),
+            }
+        )
+    return palette
