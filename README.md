@@ -37,6 +37,11 @@ python3 oklab_ppt/cli.py gradient "#2E86AB" --steps 5 --l-min 0.10 --l-max 0.55 
     --template existing.pptx --shape "직사각형 2" --angle 45 --out existing_gradient.pptx
 #   --shape는 도형의 정확한 이름(PowerPoint의 선택 창에서 확인 가능), --slide로 특정
 #   슬라이드만 지정할 수도 있습니다(기본값: 이름이 일치하는 모든 슬라이드).
+#   --text-color/--text-shapes를 추가하면 지정한 도형(제목/부제목 등)의 텍스트 색도
+#   함께 바꿔서, 밝은 배경에 흰 텍스트가 묻히는 문제를 같이 해결할 수 있습니다.
+python3 oklab_ppt/cli.py gradient "#FF1234" --color2 "#FFCB23" --steps 3 --angle 154 \
+    --template existing.pptx --shape "직사각형 2" \
+    --text-color black --text-shapes "제목 1,부제목 5" --out existing_gradient.pptx
 
 # 5) 색조 유지 대신 두 색 사이를 보간(예: 빨강 -> 노랑)
 python3 oklab_ppt/cli.py gradient "#7A0C1E" --color2 "#A67C00" --steps 5 \

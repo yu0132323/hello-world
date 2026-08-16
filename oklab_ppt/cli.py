@@ -140,27 +140,56 @@ def etree_localname(element) -> str:
     return etree.QName(element.tag).localname
 
 
+def _resolve_color_keyword(val: str) -> str:
+    v = val.strip().lower()
+    if v in ("black", "dark"):
+        return "000000"
+    if v in ("white", "light"):
+        return "FFFFFF"
+    return val.strip().lstrip("#").upper()
+
+
 def cmd_gradient(args: argparse.Namespace) -> None:
     from pptx import Presentation
+    from pptx.dml.color import RGBColor
+
+    if args.text_color and not args.text_shapes:
+        raise SystemExit("--text-color requires --text-shapes (comma-separated exact shape names)")
 
     palette = _build_palette(args)
     hexes = [c["hex"] for c in palette]
 
     prs = Presentation(args.template)
     matches = []
+    text_target_names = set(s.strip() for s in (args.text_shapes or "").split(",") if s.strip())
+    text_matches = []
     for slide_index, slide in enumerate(prs.slides):
         if args.slide is not None and slide_index != args.slide:
             continue
         for shape in slide.shapes:
             if shape.name == args.shape:
                 matches.append((slide_index, shape))
+            if shape.name in text_target_names and shape.has_text_frame:
+                text_matches.append((slide_index, shape))
 
     if not matches:
         raise SystemExit(f"no shape named {args.shape!r} found" + ("" if args.slide is None else f" on slide {args.slide}"))
+    if text_target_names and not text_matches:
+        raise SystemExit(f"no text shapes matching {sorted(text_target_names)} found" + ("" if args.slide is None else f" on slide {args.slide}"))
 
     for slide_index, shape in matches:
         _set_gradient_fill(shape._element, hexes, args.angle)
         print(f"slide {slide_index}: applied gradient to {shape.name!r}")
+
+    if args.text_color:
+        text_hex = _resolve_color_keyword(args.text_color)
+        run_count = 0
+        for slide_index, shape in text_matches:
+            for para in shape.text_frame.paragraphs:
+                for run in para.runs:
+                    run.font.color.rgb = RGBColor.from_string(text_hex)
+                    run_count += 1
+        print(f"recolored {run_count} text run(s) in {sorted(text_target_names)} to #{text_hex}")
 
     prs.save(args.out)
     src = f"#{args.color.lstrip('#').upper()}"
@@ -264,6 +293,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_gradient.add_argument("--shape", required=True, help="exact shape name to fill, e.g. '직사각형 2'")
     p_gradient.add_argument("--slide", type=int, default=None, help="0-based slide index (default: all slides)")
     p_gradient.add_argument("--angle", type=float, default=45.0, help="gradient angle in degrees (default: 45)")
+    p_gradient.add_argument(
+        "--text-color",
+        default=None,
+        help="also recolor text in --text-shapes to this color (hex, or 'black'/'white')",
+    )
+    p_gradient.add_argument(
+        "--text-shapes",
+        default=None,
+        help="comma-separated exact shape names to recolor text for, e.g. '제목 1,부제목 5' (required with --text-color)",
+    )
     p_gradient.add_argument("--out", required=True, help="output .pptx path")
     p_gradient.set_defaults(func=cmd_gradient)
 
