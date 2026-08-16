@@ -43,6 +43,14 @@ python3 oklab_ppt/cli.py gradient "#FF1234" --color2 "#FFCB23" --steps 3 --angle
     --template existing.pptx --shape "직사각형 2" \
     --text-color black --text-shapes "제목 1,부제목 5" --out existing_gradient.pptx
 
+# 6) 선형 대신 방사형/사각형 그라데이션 + 중심 위치 지정
+python3 oklab_ppt/cli.py gradient "#7A0C1E" --color2 "#A67C00" --steps 5 \
+    --type radial --center "top-left" \
+    --template existing.pptx --shape "직사각형 2" --out existing_radial.pptx
+#   --type linear(기본)/radial/rectangular, --center는 키워드(center, top-left, top,
+#   top-right, left, right, bottom-left, bottom, bottom-right) 또는 "X%,Y%" 형식.
+#   --type linear일 때는 --angle이, 그 외에는 --center가 적용됩니다.
+
 # 5) 색조 유지 대신 두 색 사이를 보간(예: 빨강 -> 노랑)
 python3 oklab_ppt/cli.py gradient "#7A0C1E" --color2 "#A67C00" --steps 5 \
     --template existing.pptx --shape "직사각형 2" --angle 45 --out existing_red_yellow.pptx

@@ -101,8 +101,48 @@ _FILL_TAGS = ["noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFil
 _SPPR_PRE_FILL_TAGS = ["xfrm", "custGeom", "prstGeom"]
 
 
-def _set_gradient_fill(sp_element, hexes: list[str], angle_deg: float) -> None:
-    """Replace a <p:sp>'s fill with a linear a:gradFill built from `hexes`."""
+_CENTER_KEYWORDS = {
+    "center": (0.5, 0.5),
+    "top-left": (0.0, 0.0),
+    "top": (0.5, 0.0),
+    "top-right": (1.0, 0.0),
+    "left": (0.0, 0.5),
+    "right": (1.0, 0.5),
+    "bottom-left": (0.0, 1.0),
+    "bottom": (0.5, 1.0),
+    "bottom-right": (1.0, 1.0),
+}
+
+
+def parse_center(val: str) -> tuple[float, float]:
+    v = val.strip().lower()
+    if v in _CENTER_KEYWORDS:
+        return _CENTER_KEYWORDS[v]
+
+    def parse_component(s: str) -> float:
+        s = s.strip()
+        return float(s[:-1]) / 100 if s.endswith("%") else float(s)
+
+    parts = v.split(",")
+    if len(parts) != 2:
+        raise SystemExit(f"invalid --center {val!r}; use a keyword ({', '.join(_CENTER_KEYWORDS)}) or 'X%,Y%'")
+    return parse_component(parts[0]), parse_component(parts[1])
+
+
+def _set_gradient_fill(
+    sp_element,
+    hexes: list[str],
+    *,
+    kind: str = "linear",
+    angle_deg: float = 45.0,
+    center: tuple[float, float] = (0.5, 0.5),
+) -> None:
+    """Replace a <p:sp>'s fill with an a:gradFill built from `hexes`.
+
+    kind is "linear" (angle_deg controls direction), "radial", or
+    "rectangular" (both of the latter converge on/radiate from `center`,
+    given as (x, y) fractions of the shape's bounding box).
+    """
     from pptx.oxml.ns import qn
 
     sp_pr = sp_element.find(qn("p:spPr"))
@@ -124,8 +164,25 @@ def _set_gradient_fill(sp_element, hexes: list[str], angle_deg: float) -> None:
         srgb = gs.makeelement(qn("a:srgbClr"), {"val": hex_val})
         gs.append(srgb)
         gs_lst.append(gs)
-    lin = grad_fill.makeelement(qn("a:lin"), {"ang": str(round(angle_deg * 60000)), "scaled": "1"})
-    grad_fill.append(lin)
+
+    if kind == "linear":
+        shape_el = grad_fill.makeelement(qn("a:lin"), {"ang": str(round(angle_deg * 60000)), "scaled": "1"})
+        grad_fill.append(shape_el)
+    else:
+        path_attr = "circle" if kind == "radial" else "rect"
+        path_el = grad_fill.makeelement(qn("a:path"), {"path": path_attr})
+        cx, cy = center
+        rect = path_el.makeelement(
+            qn("a:fillToRect"),
+            {
+                "l": str(round(cx * 100000)),
+                "t": str(round(cy * 100000)),
+                "r": str(round((1 - cx) * 100000)),
+                "b": str(round((1 - cy) * 100000)),
+            },
+        )
+        path_el.append(rect)
+        grad_fill.append(path_el)
 
     insert_at = 0
     for i, child in enumerate(sp_pr):
@@ -177,9 +234,10 @@ def cmd_gradient(args: argparse.Namespace) -> None:
     if text_target_names and not text_matches:
         raise SystemExit(f"no text shapes matching {sorted(text_target_names)} found" + ("" if args.slide is None else f" on slide {args.slide}"))
 
+    center = parse_center(args.center)
     for slide_index, shape in matches:
-        _set_gradient_fill(shape._element, hexes, args.angle)
-        print(f"slide {slide_index}: applied gradient to {shape.name!r}")
+        _set_gradient_fill(shape._element, hexes, kind=args.type, angle_deg=args.angle, center=center)
+        print(f"slide {slide_index}: applied {args.type} gradient to {shape.name!r}")
 
     if args.text_color:
         text_hex = _resolve_color_keyword(args.text_color)
@@ -195,7 +253,8 @@ def cmd_gradient(args: argparse.Namespace) -> None:
     src = f"#{args.color.lstrip('#').upper()}"
     if args.color2:
         src += f" -> #{args.color2.lstrip('#').upper()}"
-    print(f"wrote gradient from {src} ({args.steps} steps, {args.angle} deg) -> {args.out}")
+    detail = f"angle {args.angle} deg" if args.type == "linear" else f"center {args.center}"
+    print(f"wrote {args.type} gradient from {src} ({args.steps} steps, {detail}) -> {args.out}")
     _print_palette(palette)
 
 
@@ -292,7 +351,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_gradient.add_argument("--template", required=True, help="existing .pptx containing the shape to recolor")
     p_gradient.add_argument("--shape", required=True, help="exact shape name to fill, e.g. '직사각형 2'")
     p_gradient.add_argument("--slide", type=int, default=None, help="0-based slide index (default: all slides)")
-    p_gradient.add_argument("--angle", type=float, default=45.0, help="gradient angle in degrees (default: 45)")
+    p_gradient.add_argument(
+        "--type",
+        choices=["linear", "radial", "rectangular"],
+        default="linear",
+        help="gradient shape (default: linear)",
+    )
+    p_gradient.add_argument("--angle", type=float, default=45.0, help="linear gradient angle in degrees (default: 45); ignored for radial/rectangular")
+    p_gradient.add_argument(
+        "--center",
+        default="50%,50%",
+        help="center point for radial/rectangular gradients: a keyword (center, top-left, top, "
+        "top-right, left, right, bottom-left, bottom, bottom-right) or 'X%,Y%' (default: 50%,50%); "
+        "ignored for linear",
+    )
     p_gradient.add_argument(
         "--text-color",
         default=None,
