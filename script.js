@@ -24,16 +24,22 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ED5lSv3N8zdKUzRF-Arn0w_R3ALO5_J
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 let currentUser = null;
+let posts = [];
+
+function escapeHtml(text) {
+  return text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
 
 // --- View switching ---
 // The header stays fixed; only the <main> content swaps between these views.
 
 const views = {
   home: document.getElementById("viewHome"),
-  auth: document.getElementById("viewAuth"),
+  post: document.getElementById("viewPost"),
+  login: document.getElementById("viewLogin"),
   recovery: document.getElementById("viewRecovery"),
   recoveryComplete: document.getElementById("viewRecoveryComplete"),
-  messages: document.getElementById("viewMessages"),
+  write: document.getElementById("viewWrite"),
 };
 
 function showView(name) {
@@ -44,59 +50,73 @@ function showView(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-document.querySelectorAll(".home-link").forEach((link) => {
-  link.addEventListener("click", () => showView("home"));
-});
+// --- Posts (public read, owner-only write) ---
 
-// --- Contact form ---
+const postList = document.getElementById("postList");
+const postDetail = document.getElementById("postDetail");
+const backToListBtn = document.getElementById("backToListBtn");
 
-const contactForm = document.getElementById("contactForm");
-const formStatus = document.getElementById("formStatus");
-
-contactForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  formStatus.textContent = "";
-  formStatus.className = "form-status";
-
-  const submitBtn = contactForm.querySelector("button[type='submit']");
-  submitBtn.disabled = true;
-
-  const { error } = await supabaseClient.from("contact_messages").insert({
-    name: document.getElementById("name").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    message: document.getElementById("message").value.trim(),
-    user_id: currentUser ? currentUser.id : null,
-  });
-
-  submitBtn.disabled = false;
+async function loadPosts() {
+  const { data, error } = await supabaseClient
+    .from("posts")
+    .select("id, title, content, created_at")
+    .order("created_at", { ascending: false });
 
   if (error) {
-    formStatus.textContent = "전송에 실패했습니다. 잠시 후 다시 시도해 주세요.";
-    formStatus.classList.add("form-status--error");
+    postList.innerHTML = '<p class="post-list__empty">글을 불러오지 못했습니다.</p>';
     return;
   }
 
-  formStatus.textContent = "메시지가 전송되었습니다. 감사합니다!";
-  formStatus.classList.add("form-status--success");
-  contactForm.reset();
-});
+  posts = data || [];
+
+  if (posts.length === 0) {
+    postList.innerHTML = '<p class="post-list__empty">아직 기록된 시도가 없습니다.</p>';
+    return;
+  }
+
+  postList.innerHTML = posts
+    .map((post) => {
+      const date = new Date(post.created_at).toLocaleDateString("ko-KR");
+      return `
+        <button type="button" class="post-card" data-id="${post.id}">
+          <div class="post-card__date">${date}</div>
+          <h3 class="post-card__title">${escapeHtml(post.title)}</h3>
+          <p class="post-card__excerpt">${escapeHtml(post.content)}</p>
+        </button>
+      `;
+    })
+    .join("");
+
+  postList.querySelectorAll(".post-card").forEach((card) => {
+    card.addEventListener("click", () => openPost(card.dataset.id));
+  });
+}
+
+function openPost(id) {
+  const post = posts.find((p) => p.id === id);
+  if (!post) return;
+
+  const date = new Date(post.created_at).toLocaleDateString("ko-KR");
+  postDetail.innerHTML = `
+    <div class="post-detail__date">${date}</div>
+    <h2 class="post-detail__title">${escapeHtml(post.title)}</h2>
+    <div class="post-detail__content">${escapeHtml(post.content)}</div>
+  `;
+  showView("post");
+}
+
+backToListBtn.addEventListener("click", () => showView("home"));
 
 // --- Nav auth controls ---
 
 const navLoggedOut = document.getElementById("navLoggedOut");
 const navLoggedIn = document.getElementById("navLoggedIn");
-const messagesUserEmail = document.getElementById("messagesUserEmail");
 const navLoginBtn = document.getElementById("navLoginBtn");
-const navSignupBtn = document.getElementById("navSignupBtn");
-const navMessagesBtn = document.getElementById("navMessagesBtn");
+const navWriteBtn = document.getElementById("navWriteBtn");
 const navLogoutBtn = document.getElementById("navLogoutBtn");
 
-navLoginBtn.addEventListener("click", () => showView("auth"));
-navSignupBtn.addEventListener("click", () => showView("auth"));
-navMessagesBtn.addEventListener("click", () => {
-  showView("messages");
-  loadMyMessages();
-});
+navLoginBtn.addEventListener("click", () => showView("login"));
+navWriteBtn.addEventListener("click", () => showView("write"));
 
 navLogoutBtn.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
@@ -109,18 +129,16 @@ function updateAuthUI(user) {
   if (user) {
     navLoggedOut.hidden = true;
     navLoggedIn.hidden = false;
-    messagesUserEmail.textContent = user.email;
   } else {
     navLoggedOut.hidden = false;
     navLoggedIn.hidden = true;
   }
 }
 
-// --- Login / signup ---
+// --- Login ---
 
 const authForm = document.getElementById("authForm");
 const authStatus = document.getElementById("authStatus");
-const signupBtn = document.getElementById("signupBtn");
 const forgotPasswordBtn = document.getElementById("forgotPasswordBtn");
 
 authForm.addEventListener("submit", async (event) => {
@@ -141,32 +159,6 @@ authForm.addEventListener("submit", async (event) => {
 
   authForm.reset();
   showView("home");
-});
-
-signupBtn.addEventListener("click", async () => {
-  authStatus.textContent = "";
-  authStatus.className = "form-status";
-
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value;
-
-  if (!email || password.length < 6) {
-    authStatus.textContent = "이메일과 6자 이상의 비밀번호를 입력해 주세요.";
-    authStatus.classList.add("form-status--error");
-    return;
-  }
-
-  const { error } = await supabaseClient.auth.signUp({ email, password });
-
-  if (error) {
-    authStatus.textContent = "회원가입에 실패했습니다: " + error.message;
-    authStatus.classList.add("form-status--error");
-    return;
-  }
-
-  authStatus.textContent = "가입 확인 이메일을 보냈습니다. 메일함을 확인해 주세요.";
-  authStatus.classList.add("form-status--success");
-  authForm.reset();
 });
 
 forgotPasswordBtn.addEventListener("click", async () => {
@@ -220,36 +212,38 @@ recoveryForm.addEventListener("submit", async (event) => {
   showView("recoveryComplete");
 });
 
-goToLoginBtn.addEventListener("click", () => {
-  showView("auth");
-});
+goToLoginBtn.addEventListener("click", () => showView("login"));
 
-// --- My messages ---
+// --- Write a post ---
 
-const myMessagesList = document.getElementById("myMessages");
+const postForm = document.getElementById("postForm");
+const postStatus = document.getElementById("postStatus");
 
-async function loadMyMessages() {
-  if (!currentUser) return;
+postForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  postStatus.textContent = "";
+  postStatus.className = "form-status";
 
-  const { data, error } = await supabaseClient
-    .from("contact_messages")
-    .select("message, created_at")
-    .eq("user_id", currentUser.id)
-    .order("created_at", { ascending: false });
+  const submitBtn = postForm.querySelector("button[type='submit']");
+  submitBtn.disabled = true;
 
-  if (error || !data || data.length === 0) {
-    myMessagesList.innerHTML = '<li class="my-message__empty">아직 보낸 메시지가 없습니다.</li>';
+  const { error } = await supabaseClient.from("posts").insert({
+    title: document.getElementById("postTitle").value.trim(),
+    content: document.getElementById("postContent").value.trim(),
+  });
+
+  submitBtn.disabled = false;
+
+  if (error) {
+    postStatus.textContent = "게시에 실패했습니다: " + error.message;
+    postStatus.classList.add("form-status--error");
     return;
   }
 
-  myMessagesList.innerHTML = data
-    .map((row) => {
-      const date = new Date(row.created_at).toLocaleString("ko-KR");
-      const message = row.message.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-      return `<li><div class="my-message__meta">${date}</div>${message}</li>`;
-    })
-    .join("");
-}
+  postForm.reset();
+  await loadPosts();
+  showView("home");
+});
 
 // --- Auth session wiring ---
 
@@ -264,3 +258,5 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 supabaseClient.auth.getSession().then(({ data }) => {
   updateAuthUI(data.session ? data.session.user : null);
 });
+
+loadPosts();
