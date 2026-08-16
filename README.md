@@ -51,6 +51,14 @@ python3 oklab_ppt/cli.py gradient "#7A0C1E" --color2 "#A67C00" --steps 5 \
 #   top-right, left, right, bottom-left, bottom, bottom-right) 또는 "X%,Y%" 형식.
 #   --type linear일 때는 --angle이, 그 외에는 --center가 적용됩니다.
 
+# 7) 방사형/사각형 그라데이션을 여러 시작 위치에서 섞기
+python3 oklab_ppt/cli.py gradient "#7A0C1E" --color2 "#A67C00" --steps 5 \
+    --type radial --center "top-left;bottom-right" \
+    --template existing.pptx --shape "직사각형 2" --out existing_multi.pptx
+#   --center를 ';'로 구분해 여러 개 지정하면, 각 위치에서 시작하는 그라데이션을
+#   가장자리가 투명해지는 도형 여러 장으로 겹쳐 쌓아서 서로 자연스럽게 섞습니다.
+#   (OOXML gradFill 자체는 중심을 하나만 가질 수 있어서, 도형을 복제해 구현합니다.)
+
 # 5) 색조 유지 대신 두 색 사이를 보간(예: 빨강 -> 노랑)
 python3 oklab_ppt/cli.py gradient "#7A0C1E" --color2 "#A67C00" --steps 5 \
     --template existing.pptx --shape "직사각형 2" --angle 45 --out existing_red_yellow.pptx

@@ -18,6 +18,7 @@ Otherwise it builds a same-hue tints/shades ramp from --color alone.
 from __future__ import annotations
 
 import argparse
+import copy
 import sys
 
 from color_oklab import generate_tone_palette, interpolate_tone_palette
@@ -129,6 +130,14 @@ def parse_center(val: str) -> tuple[float, float]:
     return parse_component(parts[0]), parse_component(parts[1])
 
 
+def parse_centers(val: str) -> list[tuple[float, float]]:
+    """Parse a ';'-separated list of --center values into multiple points."""
+    parts = [p for p in val.split(";") if p.strip()]
+    if not parts:
+        raise SystemExit("--center must not be empty")
+    return [parse_center(p) for p in parts]
+
+
 def _set_gradient_fill(
     sp_element,
     hexes: list[str],
@@ -136,12 +145,16 @@ def _set_gradient_fill(
     kind: str = "linear",
     angle_deg: float = 45.0,
     center: tuple[float, float] = (0.5, 0.5),
+    fade_out: bool = False,
 ) -> None:
     """Replace a <p:sp>'s fill with an a:gradFill built from `hexes`.
 
     kind is "linear" (angle_deg controls direction), "radial", or
     "rectangular" (both of the latter converge on/radiate from `center`,
-    given as (x, y) fractions of the shape's bounding box).
+    given as (x, y) fractions of the shape's bounding box). If fade_out is
+    set, the outermost stop is made fully transparent instead of solid --
+    used when this fill is one of several radial layers stacked on the same
+    shape, so it blends into whatever is beneath it instead of covering it.
     """
     from pptx.oxml.ns import qn
 
@@ -162,6 +175,8 @@ def _set_gradient_fill(
         pos = round(i / (n - 1) * 100000)
         gs = gs_lst.makeelement(qn("a:gs"), {"pos": str(pos)})
         srgb = gs.makeelement(qn("a:srgbClr"), {"val": hex_val})
+        if fade_out and i == n - 1:
+            srgb.append(srgb.makeelement(qn("a:alpha"), {"val": "0"}))
         gs.append(srgb)
         gs_lst.append(gs)
 
@@ -195,6 +210,40 @@ def etree_localname(element) -> str:
     from lxml import etree
 
     return etree.QName(element.tag).localname
+
+
+def _next_shape_id(sp_tree) -> int:
+    from pptx.oxml.ns import qn
+
+    ids = [int(el.get("id")) for el in sp_tree.iter(qn("p:cNvPr")) if (el.get("id") or "").isdigit()]
+    return (max(ids) if ids else 0) + 1
+
+
+def _clone_shape_layer(sp_element, new_id: int, name_suffix: str):
+    """Deep-copy a <p:sp>, strip its outline/text, and give it a fresh id/name.
+
+    Used to stack extra radial/rectangular gradient layers (one per extra
+    --center) on top of a shape without duplicating its border or any text.
+    """
+    from pptx.oxml.ns import qn
+
+    clone = copy.deepcopy(sp_element)
+    cnvpr = clone.find(f"{qn('p:nvSpPr')}/{qn('p:cNvPr')}")
+    cnvpr.set("id", str(new_id))
+    cnvpr.set("name", f"{cnvpr.get('name')} {name_suffix}")
+
+    sp_pr = clone.find(qn("p:spPr"))
+    ln = sp_pr.find(qn("a:ln"))
+    if ln is not None:
+        sp_pr.remove(ln)
+
+    tx_body = clone.find(qn("p:txBody"))
+    if tx_body is not None:
+        for para in tx_body.findall(qn("a:p")):
+            for run in para.findall(qn("a:r")):
+                para.remove(run)
+
+    return clone
 
 
 def _resolve_color_keyword(val: str) -> str:
@@ -234,10 +283,30 @@ def cmd_gradient(args: argparse.Namespace) -> None:
     if text_target_names and not text_matches:
         raise SystemExit(f"no text shapes matching {sorted(text_target_names)} found" + ("" if args.slide is None else f" on slide {args.slide}"))
 
-    center = parse_center(args.center)
+    centers = parse_centers(args.center)
+    multi = args.type != "linear" and len(centers) > 1
     for slide_index, shape in matches:
-        _set_gradient_fill(shape._element, hexes, kind=args.type, angle_deg=args.angle, center=center)
-        print(f"slide {slide_index}: applied {args.type} gradient to {shape.name!r}")
+        if not multi:
+            _set_gradient_fill(shape._element, hexes, kind=args.type, angle_deg=args.angle, center=centers[0])
+            print(f"slide {slide_index}: applied {args.type} gradient to {shape.name!r}")
+            continue
+
+        # Multiple radial/rectangular sources: OOXML has no native multi-center
+        # gradient, so stack one opaque base layer (first center) plus one
+        # extra copy of the shape per additional center, each fading to
+        # transparent at its edge so the layers blend together visually.
+        sp_tree = shape._element.getparent()
+        pristine = copy.deepcopy(shape._element)
+        _set_gradient_fill(shape._element, hexes, kind=args.type, center=centers[0])
+        prev_element = shape._element
+        next_id = _next_shape_id(sp_tree)
+        for i, c in enumerate(centers[1:], start=2):
+            clone = _clone_shape_layer(pristine, next_id, f"(그라데이션 {i})")
+            _set_gradient_fill(clone, hexes, kind=args.type, center=c, fade_out=True)
+            sp_tree.insert(list(sp_tree).index(prev_element) + 1, clone)
+            prev_element = clone
+            next_id += 1
+        print(f"slide {slide_index}: applied {len(centers)}-source {args.type} gradient to {shape.name!r} ({len(centers) - 1} extra layer(s))")
 
     if args.text_color:
         text_hex = _resolve_color_keyword(args.text_color)
@@ -361,9 +430,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_gradient.add_argument(
         "--center",
         default="50%,50%",
-        help="center point for radial/rectangular gradients: a keyword (center, top-left, top, "
+        help="center point(s) for radial/rectangular gradients: a keyword (center, top-left, top, "
         "top-right, left, right, bottom-left, bottom, bottom-right) or 'X%,Y%' (default: 50%,50%); "
-        "ignored for linear",
+        "separate multiple with ';' (e.g. 'top-left;bottom-right') to blend several radial/"
+        "rectangular sources on the same shape; ignored for linear",
     )
     p_gradient.add_argument(
         "--text-color",
