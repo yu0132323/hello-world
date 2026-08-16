@@ -62,6 +62,8 @@ function showView(name) {
 const postList = document.getElementById("postList");
 const postDetail = document.getElementById("postDetail");
 const backToListBtn = document.getElementById("backToListBtn");
+const deletePostBtn = document.getElementById("deletePostBtn");
+let currentPostId = null;
 
 async function loadPosts() {
   const { data, error } = await supabaseClient
@@ -123,6 +125,9 @@ function openPost(id) {
   const post = posts.find((p) => p.id === id);
   if (!post) return;
 
+  currentPostId = id;
+  updateDeleteButtonVisibility();
+
   const date = new Date(post.created_at).toLocaleDateString("ko-KR");
   postDetail.innerHTML = `
     <div class="post-detail__date">${date}</div>
@@ -133,7 +138,27 @@ function openPost(id) {
   showView("post");
 }
 
+function updateDeleteButtonVisibility() {
+  deletePostBtn.hidden = !currentUser || !currentPostId;
+}
+
 backToListBtn.addEventListener("click", () => showView("home"));
+
+deletePostBtn.addEventListener("click", async () => {
+  if (!currentPostId) return;
+  if (!window.confirm("이 글을 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
+
+  const { error } = await supabaseClient.from("posts").delete().eq("id", currentPostId);
+
+  if (error) {
+    window.alert("삭제에 실패했습니다: " + error.message);
+    return;
+  }
+
+  currentPostId = null;
+  await loadPosts();
+  showView("home");
+});
 
 // --- Nav auth controls ---
 
@@ -161,6 +186,8 @@ function updateAuthUI(user) {
     navLoggedOut.hidden = false;
     navLoggedIn.hidden = true;
   }
+
+  updateDeleteButtonVisibility();
 }
 
 // --- Login ---

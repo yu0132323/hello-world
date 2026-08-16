@@ -38,7 +38,10 @@
     </div>
 
     <div id="viewPost" class="section" hidden>
-      <button type="button" id="backToListBtn" class="link-btn">← 목록으로</button>
+      <div class="post-detail__toolbar">
+        <button type="button" id="backToListBtn" class="link-btn">← 목록으로</button>
+        <button type="button" id="deletePostBtn" class="link-btn link-btn--danger" hidden>삭제</button>
+      </div>
       <article id="postDetail" class="post-detail"></article>
     </div>
 

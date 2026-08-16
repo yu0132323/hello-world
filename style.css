@@ -285,8 +285,15 @@ body {
   align-self: flex-start;
 }
 
-#viewPost .link-btn {
+.post-detail__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 1.5rem;
+}
+
+.link-btn--danger {
+  color: #d63a3a;
 }
 
 #viewRecoveryComplete .btn {
