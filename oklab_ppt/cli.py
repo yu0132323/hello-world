@@ -1,7 +1,7 @@
-"""CLI for building a CIELAB tone palette and applying it to a PowerPoint file.
+"""CLI for building an OKLab tone palette and applying it to a PowerPoint file.
 
 Subcommands:
-  palette   Print a tone palette (Lab + hex) computed from one seed color.
+  palette   Print a tone palette (OKLab + hex) computed from one seed color.
   theme     Write the palette into a .pptx theme color scheme (dk1/lt1/dk2/lt2/
             accent1-6/hlink/folHlink), so every slide that follows the theme
             picks it up.
@@ -14,16 +14,16 @@ from __future__ import annotations
 import argparse
 import sys
 
-from color_lab import generate_tone_palette
+from color_oklab import generate_tone_palette
 
 _ROLE_ORDER = ["dk1", "lt1", "dk2", "lt2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6"]
 
 
 def _print_palette(palette: list[dict]) -> None:
-    print(f"{'role':<8} {'hex':<8} {'L*':>7} {'a*':>7} {'b*':>7} {'C*':>7} {'h(deg)':>7}")
+    print(f"{'role':<8} {'hex':<8} {'L':>7} {'a':>7} {'b':>7} {'C':>7} {'h(deg)':>7}")
     for i, c in enumerate(palette):
         role = _ROLE_ORDER[i] if i < len(_ROLE_ORDER) else f"tone{i}"
-        print(f"{role:<8} #{c['hex']:<7} {c['L']:>7} {c['a']:>7} {c['b']:>7} {c['chroma']:>7} {c['hue']:>7}")
+        print(f"{role:<8} #{c['hex']:<7} {c['L']:>7.3f} {c['a']:>7.3f} {c['b']:>7.3f} {c['chroma']:>7.3f} {c['hue']:>7}")
 
 
 def cmd_palette(args: argparse.Namespace) -> None:
@@ -100,7 +100,7 @@ def cmd_swatches(args: argparse.Namespace) -> None:
 
     title_box = slide.shapes.add_textbox(Inches(0.4), Inches(0.3), Inches(9.2), Inches(0.6))
     tf = title_box.text_frame
-    tf.text = f"CIELAB tone palette from #{args.color.lstrip('#').upper()}"
+    tf.text = f"OKLab tone palette from #{args.color.lstrip('#').upper()}"
     tf.paragraphs[0].font.size = Pt(24)
     tf.paragraphs[0].font.bold = True
 
@@ -129,7 +129,7 @@ def cmd_swatches(args: argparse.Namespace) -> None:
         p0.font.size = Pt(12)
         p0.font.bold = True
         p1 = ltf.add_paragraph()
-        p1.text = f"L*{c['L']:.0f} a*{c['a']:.0f} b*{c['b']:.0f}"
+        p1.text = f"L{c['L']:.2f} a{c['a']:.2f} b{c['b']:.2f}"
         p1.alignment = PP_ALIGN.CENTER
         p1.font.size = Pt(10)
 
@@ -145,8 +145,8 @@ def build_parser() -> argparse.ArgumentParser:
     def add_common(p: argparse.ArgumentParser) -> None:
         p.add_argument("color", help="seed color as a hex string, e.g. #2E86AB")
         p.add_argument("--steps", type=int, default=6, help="number of tone steps, darkest to lightest (default: 6)")
-        p.add_argument("--l-min", type=float, default=12.0, help="minimum L* (default: 12)")
-        p.add_argument("--l-max", type=float, default=94.0, help="maximum L* (default: 94)")
+        p.add_argument("--l-min", type=float, default=0.12, help="minimum OKLab L, 0-1 (default: 0.12)")
+        p.add_argument("--l-max", type=float, default=0.94, help="maximum OKLab L, 0-1 (default: 0.94)")
 
     p_palette = sub.add_parser("palette", help="print a tone palette")
     add_common(p_palette)
