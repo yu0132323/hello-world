@@ -7,6 +7,8 @@ Subcommands:
             picks it up.
   swatches  Generate a small demo .pptx with the palette drawn as labeled
             rectangles, so you can see the tones without touching theme colors.
+  gradient  Fill an existing shape (matched by name) with a linear gradient
+            built from the tone palette.
 """
 
 from __future__ import annotations
@@ -86,6 +88,76 @@ def cmd_theme(args: argparse.Namespace) -> None:
         print(f"  {tag:<9} #{role_hex[tag]}")
 
 
+_FILL_TAGS = ["noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill"]
+_SPPR_PRE_FILL_TAGS = ["xfrm", "custGeom", "prstGeom"]
+
+
+def _set_gradient_fill(sp_element, hexes: list[str], angle_deg: float) -> None:
+    """Replace a <p:sp>'s fill with a linear a:gradFill built from `hexes`."""
+    from pptx.oxml.ns import qn
+
+    sp_pr = sp_element.find(qn("p:spPr"))
+    if sp_pr is None:
+        raise ValueError("shape has no spPr element")
+
+    for tag in _FILL_TAGS:
+        existing = sp_pr.find(qn(f"a:{tag}"))
+        if existing is not None:
+            sp_pr.remove(existing)
+
+    grad_fill = sp_pr.makeelement(qn("a:gradFill"), {"flip": "none", "rotWithShape": "1"})
+    gs_lst = grad_fill.makeelement(qn("a:gsLst"), {})
+    grad_fill.append(gs_lst)
+    n = len(hexes)
+    for i, hex_val in enumerate(hexes):
+        pos = round(i / (n - 1) * 100000)
+        gs = gs_lst.makeelement(qn("a:gs"), {"pos": str(pos)})
+        srgb = gs.makeelement(qn("a:srgbClr"), {"val": hex_val})
+        gs.append(srgb)
+        gs_lst.append(gs)
+    lin = grad_fill.makeelement(qn("a:lin"), {"ang": str(round(angle_deg * 60000)), "scaled": "1"})
+    grad_fill.append(lin)
+
+    insert_at = 0
+    for i, child in enumerate(sp_pr):
+        if etree_localname(child) in _SPPR_PRE_FILL_TAGS:
+            insert_at = i + 1
+    sp_pr.insert(insert_at, grad_fill)
+
+
+def etree_localname(element) -> str:
+    from lxml import etree
+
+    return etree.QName(element.tag).localname
+
+
+def cmd_gradient(args: argparse.Namespace) -> None:
+    from pptx import Presentation
+
+    palette = generate_tone_palette(args.color, steps=args.steps, l_min=args.l_min, l_max=args.l_max)
+    hexes = [c["hex"] for c in palette]
+
+    prs = Presentation(args.template)
+    matches = []
+    for slide_index, slide in enumerate(prs.slides):
+        if args.slide is not None and slide_index != args.slide:
+            continue
+        for shape in slide.shapes:
+            if shape.name == args.shape:
+                matches.append((slide_index, shape))
+
+    if not matches:
+        raise SystemExit(f"no shape named {args.shape!r} found" + ("" if args.slide is None else f" on slide {args.slide}"))
+
+    for slide_index, shape in matches:
+        _set_gradient_fill(shape._element, hexes, args.angle)
+        print(f"slide {slide_index}: applied gradient to {shape.name!r}")
+
+    prs.save(args.out)
+    print(f"wrote gradient from #{args.color.lstrip('#').upper()} ({args.steps} steps, {args.angle} deg) -> {args.out}")
+    _print_palette(palette)
+
+
 def cmd_swatches(args: argparse.Namespace) -> None:
     from pptx import Presentation
     from pptx.util import Inches, Pt
@@ -163,6 +235,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_swatches.add_argument("--template", help="existing .pptx to add the swatch slide to")
     p_swatches.add_argument("--out", required=True, help="output .pptx path")
     p_swatches.set_defaults(func=cmd_swatches)
+
+    p_gradient = sub.add_parser("gradient", help="fill an existing shape with a tone-palette gradient")
+    add_common(p_gradient)
+    p_gradient.add_argument("--template", required=True, help="existing .pptx containing the shape to recolor")
+    p_gradient.add_argument("--shape", required=True, help="exact shape name to fill, e.g. '직사각형 2'")
+    p_gradient.add_argument("--slide", type=int, default=None, help="0-based slide index (default: all slides)")
+    p_gradient.add_argument("--angle", type=float, default=45.0, help="gradient angle in degrees (default: 45)")
+    p_gradient.add_argument("--out", required=True, help="output .pptx path")
+    p_gradient.set_defaults(func=cmd_gradient)
 
     return parser
 

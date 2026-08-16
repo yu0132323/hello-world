@@ -31,6 +31,12 @@ python3 oklab_ppt/cli.py theme "#2E86AB" --steps 8 --out my_deck.pptx
 
 # 3) 팔레트를 색상 견본(swatch) 슬라이드로 눈으로 확인
 python3 oklab_ppt/cli.py swatches "#2E86AB" --steps 6 --out swatches.pptx
+
+# 4) 기존 pptx의 특정 도형을 팔레트 그라데이션으로 채우기
+python3 oklab_ppt/cli.py gradient "#2E86AB" --steps 5 --l-min 0.10 --l-max 0.55 \
+    --template existing.pptx --shape "직사각형 2" --angle 45 --out existing_gradient.pptx
+#   --shape는 도형의 정확한 이름(PowerPoint의 선택 창에서 확인 가능), --slide로 특정
+#   슬라이드만 지정할 수도 있습니다(기본값: 이름이 일치하는 모든 슬라이드).
 ```
 
 `--l-min`, `--l-max`(OKLab L, 0=검정 ~ 1=흰색)로 가장 어두운/밝은 톤의
