@@ -74,6 +74,8 @@
       <form id="postForm" class="contact-form">
         <input type="text" id="postTitle" name="postTitle" placeholder="제목" required />
         <textarea id="postContent" name="postContent" placeholder="오늘 시도한 것을 적어보세요" rows="8" required></textarea>
+        <label class="file-label" for="postFile">제작물 첨부 (선택, 이미지/파일/HTML 등)</label>
+        <input type="file" id="postFile" name="postFile" />
         <button type="submit" class="btn">게시하기</button>
         <p id="postStatus" class="form-status" role="status" aria-live="polite"></p>
       </form>

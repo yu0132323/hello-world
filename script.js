@@ -30,6 +30,13 @@ function escapeHtml(text) {
   return text.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 }
 
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
+
+function isImageFile(name) {
+  const ext = name.split(".").pop().toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext);
+}
+
 // --- View switching ---
 // The header stays fixed; only the <main> content swaps between these views.
 
@@ -59,7 +66,7 @@ const backToListBtn = document.getElementById("backToListBtn");
 async function loadPosts() {
   const { data, error } = await supabaseClient
     .from("posts")
-    .select("id, title, content, created_at")
+    .select("id, title, content, created_at, attachment_url, attachment_name")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -92,6 +99,26 @@ async function loadPosts() {
   });
 }
 
+function renderAttachment(post) {
+  if (!post.attachment_url) return "";
+
+  if (isImageFile(post.attachment_name || post.attachment_url)) {
+    return `
+      <div class="post-detail__attachment">
+        <img src="${post.attachment_url}" alt="${escapeHtml(post.attachment_name || "첨부 이미지")}" />
+      </div>
+    `;
+  }
+
+  return `
+    <div class="post-detail__attachment">
+      <a class="post-detail__attachment-link" href="${post.attachment_url}" target="_blank" rel="noopener noreferrer">
+        📎 ${escapeHtml(post.attachment_name || "첨부파일 열기")}
+      </a>
+    </div>
+  `;
+}
+
 function openPost(id) {
   const post = posts.find((p) => p.id === id);
   if (!post) return;
@@ -101,6 +128,7 @@ function openPost(id) {
     <div class="post-detail__date">${date}</div>
     <h2 class="post-detail__title">${escapeHtml(post.title)}</h2>
     <div class="post-detail__content">${escapeHtml(post.content)}</div>
+    ${renderAttachment(post)}
   `;
   showView("post");
 }
@@ -227,9 +255,31 @@ postForm.addEventListener("submit", async (event) => {
   const submitBtn = postForm.querySelector("button[type='submit']");
   submitBtn.disabled = true;
 
+  let attachmentUrl = null;
+  let attachmentName = null;
+
+  const file = document.getElementById("postFile").files[0];
+
+  if (file) {
+    const path = `${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabaseClient.storage.from("post-files").upload(path, file);
+
+    if (uploadError) {
+      submitBtn.disabled = false;
+      postStatus.textContent = "파일 업로드에 실패했습니다: " + uploadError.message;
+      postStatus.classList.add("form-status--error");
+      return;
+    }
+
+    attachmentUrl = supabaseClient.storage.from("post-files").getPublicUrl(path).data.publicUrl;
+    attachmentName = file.name;
+  }
+
   const { error } = await supabaseClient.from("posts").insert({
     title: document.getElementById("postTitle").value.trim(),
     content: document.getElementById("postContent").value.trim(),
+    attachment_url: attachmentUrl,
+    attachment_name: attachmentName,
   });
 
   submitBtn.disabled = false;

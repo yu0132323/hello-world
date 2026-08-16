@@ -201,6 +201,37 @@ body {
   margin-top: 1.5rem;
 }
 
+.post-detail__attachment {
+  margin-top: 1.5rem;
+}
+
+.post-detail__attachment img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.post-detail__attachment-link {
+  display: inline-block;
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.post-detail__attachment-link:hover {
+  border-color: var(--accent);
+}
+
+.file-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: -0.5rem;
+}
+
 .contact-form {
   display: flex;
   flex-direction: column;
